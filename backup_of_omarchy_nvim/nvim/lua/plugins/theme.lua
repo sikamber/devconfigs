@@ -1,0 +1,1 @@
+/home/sikamber/.config/omarchy/current/theme/neovim.lua
