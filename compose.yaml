@@ -1,0 +1,9 @@
+services:
+  nvim:
+    image: "sikamber/nvim-dev:podman"
+    tty: true # Allocates a (pseudo)-TTY to the container (the -t flag from run)
+    stdin_open: true # Keeps stdin open to allow commands (the -i flag from run)
+    volumes:
+      - /home/sikamber/workspace:/root/workspace
+    command: ["nvim"]
+    # restart: always
