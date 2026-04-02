@@ -29,7 +29,11 @@
     }
   ],
   "profiles": {
-    "defaults": {},
+    "defaults": {
+      "font": {
+        "face": "JetBrainsMono Nerd Font"
+      }
+    },
     "list": [
       {
         "guid": "{39f46570-6938-5c8d-aa4f-9713cb24accd}",
