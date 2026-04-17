@@ -45,5 +45,12 @@ return {
         floats = "transparent",
       }
     }
+  },
+  -- Set picker to use cwd, rather than root, on space-space
+  {
+    "folke/snacks.nvim",
+    keys = {
+      { "<leader><space>", LazyVim.pick("files", { root = false }), desc = "Find Files (Root Dir)" },
+    },
   }
 }
