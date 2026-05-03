@@ -8,6 +8,7 @@ sudo apt install zip unzip
 sudo curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
 sudo apt install nodejs
 sudo apt remove tree-sitter-cli
+sudo npm install -g typescript
 sudo npm install -g tree-sitter-cli
 nvim --headless "+TSInstall all" +qa
 
