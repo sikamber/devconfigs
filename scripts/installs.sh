@@ -1,8 +1,8 @@
 # Neovim and nodejs
 sudo add-apt-repository ppa:neovim-ppa/unstable
 sudo apt update
-# for Neovim
-sudo apt install -y curl git gh ripgrep fd-find neovim
+# for Neovim (xsel is the clipboard provider - seems to be enough to get it to work)
+sudo apt install -y curl git gh ripgrep fd-find neovim xsel
 # for Mason
 sudo apt install zip unzip
 sudo curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
