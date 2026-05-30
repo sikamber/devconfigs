@@ -36,6 +36,21 @@ return {
       },
     },
   },
+  -- Switch markdownlinter from standard markdownlint-cli2 to markdownlint (easier to configure)
+  {
+    "mfussenegger/nvim-lint",
+    optional = true,
+    opts = {
+      linters_by_ft = {
+        markdown = { "markdownlint" },
+      },
+      linters = {
+        markdownlint = {
+          args = { "--stdin", "--disable", "MD013", "--" },
+        },
+      },
+    },
+  },
   {
     "folke/tokyonight.nvim",
     opts = {
@@ -43,8 +58,8 @@ return {
       styles = {
         sidebars = "transparent",
         floats = "transparent",
-      }
-    }
+      },
+    },
   },
   -- Set picker to use cwd, rather than root, on space-space
   {
@@ -52,5 +67,5 @@ return {
     keys = {
       { "<leader><space>", LazyVim.pick("files", { root = false }), desc = "Find Files (Root Dir)" },
     },
-  }
+  },
 }
