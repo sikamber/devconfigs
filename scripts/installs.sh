@@ -12,6 +12,8 @@ sudo npm install -g typescript
 sudo npm install -g tree-sitter-cli
 nvim --headless "+TSInstall all" +qa
 
+sudo apt install tmux
+
 # Python and UV
 sudo apt install -y python3 python3-pip python3-venv
 curl -LsSf https://astral.sh/uv/install.sh | sh
