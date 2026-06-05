@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# Arguments (any order): "push" to auto-commit and push eligible repos, --verbose to show all output
-push=""
+# Flags (any order): --push to auto-commit and push eligible repos, --verbose to show all output
+PUSH=false
 VERBOSE=false
 for arg in "$@"; do
-  [[ "$arg" == "push" ]]      && push="push"
-  [[ "$arg" == "--verbose" ]] && VERBOSE=true
+  [[ "$arg" == "--push"    || "$arg" == "-p" ]] && PUSH=true
+  [[ "$arg" == "--verbose" || "$arg" == "-v" ]] && VERBOSE=true
 done
 
 WORKSPACE="$HOME/workspace/github.com/sikamber"
@@ -68,8 +68,8 @@ for dir in "$WORKSPACE"/*/; do
     continue
   fi
 
-  # Auto-push only if: "push" argument was given, repo is on main, and has no other branches
-  if [[ "$push" == "push" ]]; then
+  # Auto-push only if: --push flag was given, repo is on main, and has no other branches
+  if $PUSH; then
     branch_count=$(git -C "$dir" branch | wc -l)
     current_branch=$(git -C "$dir" branch --show-current)
 
@@ -88,7 +88,7 @@ for dir in "$WORKSPACE"/*/; do
   current_branch=$(git -C "$dir" branch --show-current)
 
   if [[ "$branch_count" -eq 1 && "$current_branch" == "main" ]]; then
-    echo "unpushed changes in: $name (run with 'push' to auto-push)"
+    echo "unpushed changes in: $name (run with --push to auto-push)"
   else
     echo "unpushed changes in: $name"
   fi

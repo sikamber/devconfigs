@@ -1,0 +1,10 @@
+[alias]
+	graph = log --graph --all -20
+[init]
+	defaultbranch = main
+[format]
+	pretty = oneline
+[log]
+	abbrevcommit = true
+[pull]
+	rebase = true
