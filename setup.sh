@@ -6,7 +6,7 @@ INSTALLERS_DIR="$SCRIPT_DIR/installers"
 echo ""
 
 # Add symlinks to config files
-bash "$INSTALLERS_DIR/symlinks.sh"
+bash "$INSTALLERS_DIR/symlinks.sh" "$@"
 echo ""
 
 # Add bashadditions to .bashrc
