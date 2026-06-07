@@ -12,6 +12,7 @@ done
 SYMLINKS=(
   ".config/nvim"
   ".tmux.conf"
+  ".claude/CLAUDE.md"
 )
 
 for item in "${SYMLINKS[@]}"; do
