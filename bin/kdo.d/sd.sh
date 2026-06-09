@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-# Flags (any order): --push to auto-commit and push eligible repos, --verbose to show all output
+# Flags (any order): --push to auto-commit and push eligible repos, --pull to auto-pull eligible repos, --verbose to show all output
 PUSH=false
+PULL=false
 VERBOSE=false
 for arg in "$@"; do
   [[ "$arg" == "--push"    || "$arg" == "-p" ]] && PUSH=true
+  [[ "$arg" == "--pull"    || "$arg" == "-l" ]] && PULL=true
   [[ "$arg" == "--verbose" || "$arg" == "-v" ]] && VERBOSE=true
 done
 
@@ -42,6 +44,12 @@ do_push() {
   git -C "$dir" push
 }
 
+do_pull() {
+  local dir="$1"
+  # fetch already ran before this call, so merge --ff-only avoids a second network round trip
+  git -C "$dir" merge --ff-only @{u}
+}
+
 for dir in "$WORKSPACE"/*/; do
   name="$(basename "$dir")"
 
@@ -54,18 +62,37 @@ for dir in "$WORKSPACE"/*/; do
   # --porcelain gives machine-readable output; empty string means nothing to commit
   uncommitted=$(git -C "$dir" status --porcelain 2>/dev/null)
 
-  # Check for commits that exist locally but not on the remote.
+  # Check for commits ahead/behind the remote.
   # @{u} is the upstream tracking branch — if it doesn't exist, treat as unpushed.
+  # With --pull, fetch first so the behind check reflects actual remote state.
   if git -C "$dir" rev-parse @{u} &>/dev/null 2>&1; then
+    $PULL && git -C "$dir" fetch 2>/dev/null
     ahead=$(git -C "$dir" log @{u}.. --oneline 2>/dev/null)
+    behind=$(git -C "$dir" log ..@{u} --oneline 2>/dev/null)
   else
     ahead="no-upstream"
+    behind=""
   fi
 
-  # Nothing to do — clean repo
-  if [[ -z "$uncommitted" && -z "$ahead" ]]; then
-    echo "fully pushed: $name"
+  # Nothing to do — fully in sync with remote
+  if [[ -z "$uncommitted" && -z "$ahead" && -z "$behind" ]]; then
+    echo "fully synced: $name"
     continue
+  fi
+
+  # Auto-pull only if: --pull flag was given, clean working tree, on main, behind only (not diverged)
+  if $PULL && [[ -z "$uncommitted" && -z "$ahead" && -n "$behind" ]]; then
+    branch_count=$(git -C "$dir" branch | wc -l)
+    current_branch=$(git -C "$dir" branch --show-current)
+
+    if [[ "$branch_count" -eq 1 && "$current_branch" == "main" ]]; then
+      if run_quiet do_pull "$dir"; then
+        echo "auto-pulled: $name"
+      else
+        echo "auto-pull failed: $name"
+      fi
+      continue
+    fi
   fi
 
   # Auto-push only if: --push flag was given, repo is on main, and has no other branches
@@ -83,11 +110,20 @@ for dir in "$WORKSPACE"/*/; do
     fi
   fi
 
-  # Check if this repo would have been eligible for auto-push
+  # Reporting — check eligibility once for hint messages
   branch_count=$(git -C "$dir" branch | wc -l)
   current_branch=$(git -C "$dir" branch --show-current)
+  on_main=$([[ "$branch_count" -eq 1 && "$current_branch" == "main" ]] && echo true || echo false)
 
-  if [[ "$branch_count" -eq 1 && "$current_branch" == "main" ]]; then
+  if [[ -n "$behind" && (-n "$uncommitted" || -n "$ahead") ]]; then
+    echo "diverged: $name"
+  elif [[ -n "$behind" ]]; then
+    if $on_main; then
+      echo "behind remote: $name (run with --pull to auto-pull)"
+    else
+      echo "behind remote: $name"
+    fi
+  elif $on_main; then
     echo "unpushed changes in: $name (run with --push to auto-push)"
   else
     echo "unpushed changes in: $name"
