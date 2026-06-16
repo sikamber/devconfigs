@@ -67,5 +67,16 @@ return {
     keys = {
       { "<leader><space>", LazyVim.pick("files", { root = false }), desc = "Find Files (Root Dir)" },
     },
+    -- disable flashing when seeking
+    {
+      "folke/flash.nvim",
+      opts = {
+        modes = {
+          char = {
+            highlight = { backdrop = false },
+          },
+        },
+      },
+    },
   },
 }
