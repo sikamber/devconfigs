@@ -10,10 +10,33 @@ return {
     opts = {
       completion = {
         menu = {
-          auto_show_delay_ms = 400,
+          auto_show_delay_ms = 300,
         },
         ghost_text = {
           enabled = false,
+        },
+      },
+      keymap = { preset = "default" },
+      sources = {
+        providers = {
+          buffer = { score_offset = -10 },
+        },
+      },
+    },
+  },
+  -- Make Pyright check the whole workspace
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        pyright = {
+          settings = {
+            python = {
+              analysis = {
+                diagnosticMode = "workspace",
+              },
+            },
+          },
         },
       },
     },
@@ -21,20 +44,6 @@ return {
   {
     "mason-org/mason.nvim",
     opts = { ensure_installed = { "markdownlint", "markdown-toc" } },
-  },
-  {
-    "mfussenegger/nvim-lint",
-    optional = true,
-    opts = {
-      linters_by_ft = {
-        markdown = { "markdownlint" },
-      },
-      linters = {
-        markdownlint = {
-          args = { "--stdin", "--disable", "MD013", "MD041", "--" },
-        },
-      },
-    },
   },
   -- Switch markdownlinter from standard markdownlint-cli2 to markdownlint (easier to configure)
   {
@@ -46,7 +55,7 @@ return {
       },
       linters = {
         markdownlint = {
-          args = { "--stdin", "--disable", "MD013", "--" },
+          args = { "--stdin", "--disable", "MD013", "MD041", "--" },
         },
       },
     },
