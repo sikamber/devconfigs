@@ -9,10 +9,15 @@ for arg in "$@"; do
   [[ "$arg" == "--fix" ]] && FIX=true
 done
 
+# Paths relative to $HOME. Directories work the same as files — the whole
+# directory becomes one symlink, so anything dropped into it afterwards lands
+# in this repo (that is the point for .claude/skills: skills are authored here
+# and version-controlled, not copied per machine).
 SYMLINKS=(
   ".config/nvim"
   ".tmux.conf"
   ".claude/CLAUDE.md"
+  ".claude/skills"
 )
 
 for item in "${SYMLINKS[@]}"; do
