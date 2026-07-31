@@ -13,6 +13,7 @@ for arg in "$@"; do
 done
 
 WORKSPACE="$HOME/workspace/github.com/sikamber"
+MACHINE="$(hostname -s 2>/dev/null || hostname)"
 
 # Runs a command with its output on the alternate terminal screen.
 # Output disappears on success; on failure the captured output is replayed.
@@ -41,15 +42,20 @@ run_quiet() {
 # Groups the three git operations so run_quiet covers all of them in one screen switch
 do_push() {
   local dir="$1"
-  git -C "$dir" add -A &&
-  git -C "$dir" commit -m "automatic push" &&
+  # A preceding rebase may already have made this repo ahead with nothing uncommitted,
+  # so only add/commit if there's actually something to commit.
+  if [[ -n "$(git -C "$dir" status --porcelain)" ]]; then
+    git -C "$dir" add -A &&
+    git -C "$dir" commit -m "automatic push (${MACHINE})" || return 1
+  fi
   git -C "$dir" push
 }
 
 do_pull() {
   local dir="$1"
-  # fetch already ran before this call, so merge --ff-only avoids a second network round trip
-  git -C "$dir" merge --ff-only @{u}
+  # fetch already ran before this call, so rebase avoids a second network round trip.
+  # On failure (conflicts), abort so the repo is left clean for the user to sort out by hand.
+  git -C "$dir" rebase @{u} || { git -C "$dir" rebase --abort 2>/dev/null; return 1; }
 }
 
 for dir in "$WORKSPACE"/*/; do
@@ -76,47 +82,46 @@ for dir in "$WORKSPACE"/*/; do
     behind=""
   fi
 
+  branch_count=$(git -C "$dir" branch | wc -l)
+  current_branch=$(git -C "$dir" branch --show-current)
+  on_main=$([[ "$branch_count" -eq 1 && "$current_branch" == "main" ]] && echo true || echo false)
+
   # Nothing to do — fully in sync with remote
   if [[ -z "$uncommitted" && -z "$ahead" && -z "$behind" ]]; then
     echo "fully synced: $name"
     continue
   fi
 
-  # Auto-pull only if: --pull flag was given, clean working tree, on main, behind only (not diverged)
-  if $PULL && [[ -z "$uncommitted" && -z "$ahead" && -n "$behind" ]]; then
-    branch_count=$(git -C "$dir" branch | wc -l)
-    current_branch=$(git -C "$dir" branch --show-current)
-
-    if [[ "$branch_count" -eq 1 && "$current_branch" == "main" ]]; then
-      if run_quiet do_pull "$dir"; then
-        echo "auto-pulled: $name"
-      else
-        echo "auto-pull failed: $name"
-      fi
+  # Auto-pull (rebase) only if: --pull/--sync given, clean working tree, on main, behind
+  # (whether or not also ahead — rebase replays local commits on top of the fetched ones).
+  if $PULL && $on_main && [[ -z "$uncommitted" && -n "$behind" ]]; then
+    if run_quiet do_pull "$dir"; then
+      echo "auto-pulled: $name"
+      ahead=$(git -C "$dir" log @{u}.. --oneline 2>/dev/null)
+      behind=$(git -C "$dir" log ..@{u} --oneline 2>/dev/null)
+    else
+      echo "auto-pull failed: $name (rebase hit conflicts — resolve by hand)"
       continue
     fi
   fi
 
-  # Auto-push only if: --push flag was given, repo is on main, and has no other branches
-  if $PUSH; then
-    branch_count=$(git -C "$dir" branch | wc -l)
-    current_branch=$(git -C "$dir" branch --show-current)
-
-    if [[ "$branch_count" -eq 1 && "$current_branch" == "main" ]]; then
-      if run_quiet do_push "$dir"; then
-        echo "auto-pushed: $name"
-      else
-        echo "auto-push failed: $name"
-      fi
-      continue
+  # Auto-push only if: --push/--sync given, repo is on main, and there's something to push
+  # (a pull above may have just made this true via a rebase with no working-tree changes).
+  if $PUSH && $on_main && [[ -n "$uncommitted" || -n "$ahead" ]]; then
+    if run_quiet do_push "$dir"; then
+      echo "auto-pushed: $name"
+    else
+      echo "auto-push failed: $name"
     fi
+    continue
   fi
 
-  # Reporting — check eligibility once for hint messages
-  branch_count=$(git -C "$dir" branch | wc -l)
-  current_branch=$(git -C "$dir" branch --show-current)
-  on_main=$([[ "$branch_count" -eq 1 && "$current_branch" == "main" ]] && echo true || echo false)
+  # Nothing left to do after a successful pull with nothing to push
+  if [[ -z "$uncommitted" && -z "$ahead" && -z "$behind" ]]; then
+    continue
+  fi
 
+  # Reporting
   if [[ -n "$behind" && (-n "$uncommitted" || -n "$ahead") ]]; then
     echo "diverged: $name"
   elif [[ -n "$behind" ]]; then
