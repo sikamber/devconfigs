@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-# Flags (any order): --push to auto-commit and push eligible repos, --pull to auto-pull eligible repos, --verbose to show all output
+# Flags (any order): --push to auto-commit and push eligible repos, --pull to auto-pull eligible repos,
+# --sync to do both, --verbose to show all output
 PUSH=false
 PULL=false
 VERBOSE=false
 for arg in "$@"; do
   [[ "$arg" == "--push"    || "$arg" == "-p" ]] && PUSH=true
   [[ "$arg" == "--pull"    || "$arg" == "-l" ]] && PULL=true
+  [[ "$arg" == "--sync"    || "$arg" == "-s" ]] && { PUSH=true; PULL=true; }
   [[ "$arg" == "--verbose" || "$arg" == "-v" ]] && VERBOSE=true
 done
 
@@ -64,9 +66,9 @@ for dir in "$WORKSPACE"/*/; do
 
   # Check for commits ahead/behind the remote.
   # @{u} is the upstream tracking branch — if it doesn't exist, treat as unpushed.
-  # With --pull, fetch first so the behind check reflects actual remote state.
+  # Fetch first so the ahead/behind check reflects actual remote state.
   if git -C "$dir" rev-parse @{u} &>/dev/null 2>&1; then
-    $PULL && git -C "$dir" fetch 2>/dev/null
+    git -C "$dir" fetch 2>/dev/null
     ahead=$(git -C "$dir" log @{u}.. --oneline 2>/dev/null)
     behind=$(git -C "$dir" log ..@{u} --oneline 2>/dev/null)
   else
