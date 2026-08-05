@@ -78,8 +78,20 @@ A 401 here means the PAT is missing **Code (read)**.
 own copy. It reads the token from stdin:
 
 ```bash
-az devops login --organization https://dev.azure.com/SduLandingZones
+az devops login
 ```
+
+**Do not pass `--organization`.** It scopes the stored PAT to one exact organization
+URL. Commands run inside a repo auto-detect the organization from the git remote, and
+that remote carries the org as userinfo (`https://SduLandingZones@dev.azure.com/...`),
+so the detected string does not match a URL registered without it. Every command then
+fails with "you need to run the login command", which reads like the login never
+happened rather than like a lookup miss. With no organization, the PAT is stored as a
+default that any lookup finds.
+
+The same userinfo is why the `includeIf` in `configs/gitconfig` needs a
+`https://*@dev.azure.com/**` pattern. Suspect it first whenever something DevOps-shaped
+fails to match.
 
 Stored under `~/.azure`. No `az login` is required — and would fail anyway, per above.
 
