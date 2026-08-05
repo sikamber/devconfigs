@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-INSTALLERS_DIR="$SCRIPT_DIR/installers"
+# steps/ configures this machine (symlinks, rc files); packages/ installs software.
+STEPS_DIR="$SCRIPT_DIR/steps"
+PACKAGES_DIR="$SCRIPT_DIR/packages"
 
 # Parse flags; strip from args before forwarding to sub-scripts
 VERBOSE=false
@@ -92,16 +94,16 @@ apt_packages() {
   report "${apt_summary:-apt: all packages up to date}"
 }
 
-PACKAGES_DIR="$INSTALLERS_DIR/installers"
-
 echo ""
-bash "$INSTALLERS_DIR/symlinks.sh" "${filtered_args[@]}"
+bash "$STEPS_DIR/symlinks.sh" "${filtered_args[@]}"
 echo ""
-bash "$INSTALLERS_DIR/bashrc.sh"
+bash "$STEPS_DIR/bashrc.sh"
 echo ""
-bash "$INSTALLERS_DIR/gitconfig.sh"
+bash "$STEPS_DIR/gitconfig.sh"
 echo ""
 run_step "apt packages" apt_packages
+echo ""
+run_step "azure cli" bash "$PACKAGES_DIR/azure-installer.sh"
 echo ""
 run_step "npm packages" bash "$PACKAGES_DIR/npm-installer.sh"
 echo ""

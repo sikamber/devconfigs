@@ -12,7 +12,7 @@ for arg in "$@"; do
   [[ "$arg" == "--verbose" || "$arg" == "-v" ]] && VERBOSE=true
 done
 
-WORKSPACE="$HOME/workspace/github.com/sikamber"
+WORKSPACE="$HOME/workspace"
 MACHINE="$(hostname -s 2>/dev/null || hostname)"
 
 # Runs a command with its output on the alternate terminal screen.
@@ -58,14 +58,21 @@ do_pull() {
   git -C "$dir" rebase @{u} || { git -C "$dir" rebase --abort 2>/dev/null; return 1; }
 }
 
-for dir in "$WORKSPACE"/*/; do
-  name="$(basename "$dir")"
+# Repos are nested by host and account — github.com/sikamber/grcmap, devops/ca-kamber/grcmap
+# — so search for .git rather than assuming one fixed level. maxdepth 4 covers that layout
+# and anything shallower while keeping find out of node_modules and friends; -prune stops it
+# descending into .git itself.
+mapfile -t REPOS < <(find "$WORKSPACE" -maxdepth 4 -type d -name .git -prune -printf '%h\n' 2>/dev/null | sort)
 
-  # Skip anything that isn't a git repo
-  if [[ ! -d "$dir/.git" ]]; then
-    echo "local folder: $name"
-    continue
-  fi
+if [[ ${#REPOS[@]} -eq 0 ]]; then
+  echo "no git repos found under $WORKSPACE"
+  exit 0
+fi
+
+for dir in "${REPOS[@]}"; do
+  # Path relative to the workspace root — bare basenames collide as soon as the same
+  # repo is checked out under two accounts.
+  name="${dir#"$WORKSPACE"/}"
 
   # --porcelain gives machine-readable output; empty string means nothing to commit
   uncommitted=$(git -C "$dir" status --porcelain 2>/dev/null)
@@ -125,12 +132,15 @@ for dir in "$WORKSPACE"/*/; do
   if [[ -n "$behind" && (-n "$uncommitted" || -n "$ahead") ]]; then
     echo "diverged: $name"
   elif [[ -n "$behind" ]]; then
-    if $on_main; then
+    # Only advertise the flag when it was not already given — with --pull already set,
+    # reaching here means the repo was ineligible (dirty, or more than one branch),
+    # and repeating the suggestion just misleads.
+    if $on_main && ! $PULL; then
       echo "behind remote: $name (run with --pull to auto-pull)"
     else
       echo "behind remote: $name"
     fi
-  elif $on_main; then
+  elif $on_main && ! $PUSH; then
     echo "unpushed changes in: $name (run with --push to auto-push)"
   else
     echo "unpushed changes in: $name"

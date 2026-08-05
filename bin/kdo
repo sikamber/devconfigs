@@ -1,23 +1,37 @@
 #!/usr/bin/env bash
 
-cmd="$1"
-
-if [[ -z "$cmd" ]]; then
-  echo "usage: kdo <command>"
-  exit 1
-fi
-
 # "$( )": execute command and substitute result. Quotes handle spaces. The inside
 # of the parenthesis is a separate quote context (that's why the quotes aren't unbalanced).
 # $0 is the script path. Realpath handles symlinks, and dirname gets path to the directory.
 script_dir="$(dirname "$(realpath "$0")")"
-cmd_path="$script_dir/kdo.d/$cmd.sh"
-echo $cmd_path
+cmd_dir="$script_dir/kdo.d"
 
-if [[ -x "$cmd_path" ]]; then
-  shift # remove 'sd' from the args so $@ is just the remaining args
-  exec "$cmd_path" "$@"
-else
-  echo "kdo: unknown command '$cmd'"
+usage() {
+  echo "usage: kdo <command>"
+  echo ""
+  echo "commands:"
+  for f in "$cmd_dir"/*.sh; do
+    # The glob stays literal when nothing matches, so skip anything non-existent
+    [[ -e "$f" ]] || continue
+    echo "  $(basename "$f" .sh)"
+  done
+}
+
+cmd="$1"
+
+if [[ -z "$cmd" ]]; then
+  usage
   exit 1
 fi
+
+cmd_path="$cmd_dir/$cmd.sh"
+
+if [[ ! -x "$cmd_path" ]]; then
+  echo "kdo: unknown command '$cmd'"
+  echo ""
+  usage
+  exit 1
+fi
+
+shift # drop the command name so "$@" is just the arguments meant for it
+exec "$cmd_path" "$@"

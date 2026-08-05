@@ -8,13 +8,16 @@ before=$("$HOME/.dotnet/dotnet" --version 2>/dev/null)
 # Re-running the install script upgrades dotnet if already present
 curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS
 
-# Add .net to path if not already there
+# Two separate concerns: make dotnet usable in this run, and make it usable in future
+# shells. Guard the .bashrc append on .bashrc itself — a non-interactive shell has not
+# sourced it, so $PATH is not evidence of whether the line is already there. The two
+# guards below do it this way too.
 DOTNET_PATH="$HOME/.dotnet"
 if [[ ":$PATH:" != *":$DOTNET_PATH:"* ]]; then
   export PATH="$PATH:$DOTNET_PATH"
-  cat >>~/.bashrc <<'EOF'
-export PATH="$PATH:$HOME/.dotnet"
-EOF
+fi
+if ! grep -qF 'PATH:$HOME/.dotnet"' ~/.bashrc; then
+  echo 'export PATH="$PATH:$HOME/.dotnet"' >>~/.bashrc
 fi
 
 # Install or upgrade dotnet-ef tool

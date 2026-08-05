@@ -8,3 +8,35 @@
 	abbrevcommit = true
 [pull]
 	rebase = true
+
+# Azure DevOps auth is a Personal Access Token held by git's built-in store helper.
+#
+# Not OAuth via Git Credential Manager, which is the obvious choice and does not work
+# here: a Conditional Access policy requires a managed device, and WSL has no device
+# identity — no access to the Primary Refresh Token in the Windows TPM. Browser and
+# device-code flows both fail that check. A PAT sidesteps it because it authenticates
+# as a registered credential rather than proving what machine is asking.
+#
+# Scoped to dev.azure.com so the helper cannot serve or capture anything else; github.com
+# is handled by `gh auth setup-git`, which resets the helper list for that host.
+#
+# The token lands in ~/.git-credentials in plaintext, mode 600. That is a real cost —
+# a PAT carries whatever scopes it was granted, unlike a short-lived refresh token.
+# Keep the scopes minimal, keep the expiry no longer than needed, and revoke from
+# _usersSettings/tokens if a machine is lost.
+[credential "https://dev.azure.com"]
+	helper = store
+
+# Commits to Azure DevOps remotes are authored by the admin account rather than the
+# everyday identity. Keep ~/.gitconfig-devops machine-local — this repo versions the
+# reference, not the identity. A missing include path is ignored by git.
+# Requires git 2.36+ for hasconfig; 24.04 ships 2.43.
+#
+# Two conditions because the pattern is matched against the literal remote URL, and
+# DevOps clone URLs carry the org as userinfo — https://SduLandingZones@dev.azure.com/...
+# — which the bare-host pattern cannot match. The userinfo is worth keeping: it means
+# git only prompts for the PAT, not for a username as well.
+[includeIf "hasconfig:remote.*.url:https://dev.azure.com/**"]
+	path = ~/.gitconfig-devops
+[includeIf "hasconfig:remote.*.url:https://*@dev.azure.com/**"]
+	path = ~/.gitconfig-devops
