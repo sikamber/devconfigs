@@ -9,8 +9,9 @@ usage() {
   echo "usage: kdo devops <command>"
   echo ""
   echo "commands:"
-  echo "  list            open work items in this project"
-  echo "  create <name>   create a Feature work item"
+  echo "  list                 open work items in this project"
+  echo "  create <name>        create a Feature work item"
+  echo "  close <id> [state]   move a work item to a terminal state"
 }
 
 # Organization and project are read off the git remote, so every command needs to be
@@ -24,6 +25,14 @@ require_repo() {
 # "Open" has to span process templates: Agile closes to Closed, Scrum and Basic to Done.
 # Removed is the discard state in all three. Anything not in this list counts as open.
 CLOSED_STATES="'Closed', 'Removed', 'Done'"
+
+# Which of those `close` moves an item to. Agile uses Closed; Scrum and Basic use Done.
+# Override per call with a second argument if an item needs a different terminal state.
+CLOSE_STATE="Closed"
+
+# create and update return the id at the top level, unlike query results where every
+# column lives under .fields — hence two different projections in this file.
+ITEM_PROJECTION='{ID:id, Type:fields."System.WorkItemType", State:fields."System.State", Title:fields."System.Title"}'
 
 # az boards query returns each item with its columns nested under .fields, which -o table
 # renders unusably. The --query projection flattens the ones worth seeing. Title goes last
@@ -53,12 +62,34 @@ devops_create() {
     return 1
   fi
 
-  # The create response carries id at the top level, unlike query results where every
-  # column lives under .fields
   az boards work-item create \
     --title "$title" \
     --type Feature \
-    --query '{ID:id, Type:fields."System.WorkItemType", State:fields."System.State", Title:fields."System.Title"}' \
+    --query "$ITEM_PROJECTION" \
+    --output table
+}
+
+devops_close() {
+  require_repo || return 1
+
+  local id="$1"
+  local state="${2:-$CLOSE_STATE}"
+
+  if [[ -z "$id" ]]; then
+    echo "usage: kdo devops close <id> [state]"
+    return 1
+  fi
+
+  # Catching this here keeps a typo'd id from surfacing as an opaque az error
+  if [[ ! "$id" =~ ^[0-9]+$ ]]; then
+    echo "kdo devops: '$id' is not a work item id"
+    return 1
+  fi
+
+  az boards work-item update \
+    --id "$id" \
+    --state "$state" \
+    --query "$ITEM_PROJECTION" \
     --output table
 }
 
@@ -74,6 +105,7 @@ shift # remaining args pass through to az, so `kdo devops list -o json` override
 case "$cmd" in
 list) devops_list "$@" ;;
 create) devops_create "$@" ;;
+close) devops_close "$@" ;;
 *)
   echo "kdo devops: unknown command '$cmd'"
   echo ""
