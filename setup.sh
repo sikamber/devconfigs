@@ -85,8 +85,7 @@ apt_packages() {
 
   # Capture output to extract apt's own summary line ("X upgraded, Y newly installed")
   apt_out=$(sudo apt install -y \
-    curl git gh ripgrep fd-find neovim xsel \
-    zip unzip nodejs tmux \
+    curl git gh ripgrep fd-find neovim xsel libicu78 zip unzip nodejs tmux \
     python3 python3-pip python3-venv 2>&1)
   echo "$apt_out"
   apt_summary=$(printf '%s\n' "$apt_out" | grep -oE '^[0-9]+ upgraded.*' | head -n1)
