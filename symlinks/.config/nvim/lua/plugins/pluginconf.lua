@@ -38,6 +38,7 @@ return {
             },
           },
         },
+        omnisharp = { enabled = false }, -- Disable omnisharp to make way for Roslyn instead
         emmet_language_server = {
           filetypes = { "html", "css", "javascriptreact", "typescriptreact" },
         },
@@ -46,7 +47,30 @@ return {
   },
   {
     "mason-org/mason.nvim",
-    opts = { ensure_installed = { "markdownlint", "markdown-toc" } },
+    opts = {
+      registries = {
+        "github:mason-org/mason-registry",
+        "github:Crashdummyy/mason-registry",
+      },
+      ensure_installed = { "markdownlint", "markdown-toc", "roslyn" },
+    },
+  },
+  -- Roslyn LSP (since Omnisharp had performance issues)
+  {
+    "seblyng/roslyn.nvim",
+    ft = "cs",
+    opts = {},
+    init = function()
+      vim.lsp.config("roslyn", {
+        -- This didn't change much, but a higher setting might be necessary if it's rough on the CPU. flags = { debounce_text_changes = 300 }, -- Limit how agressively changes are sent (because csharp is heavy)
+        settings = {
+          ["csharp|background_analysis"] = {
+            dotnet_analyzer_diagnostics_scope = "openFiles",
+            dotnet_compiler_diagnostics_scope = "openFiles",
+          },
+        },
+      })
+    end,
   },
   -- Switch markdownlinter from standard markdownlint-cli2 to markdownlint (easier to configure)
   {
