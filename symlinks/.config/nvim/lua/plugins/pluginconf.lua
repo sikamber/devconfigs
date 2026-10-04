@@ -4,6 +4,31 @@
 -- * add extra plugins
 -- * disable/enabled LazyVim plugins
 -- * override the configuration of LazyVim plugins
+
+-- Vault heading navigation: a note named "<something> MOC.md" marks the
+-- directory it lives in as a "content area" root for the narrow heading picker.
+local function is_moc(name)
+  return name:match("MOC%.md$") ~= nil
+end
+
+local function nearest_moc()
+  return vim.fs.find(is_moc, { upward = true, path = vim.fn.expand("%:p:h"), type = "file", limit = 1 })[1]
+end
+
+local function vault_root()
+  return vim.fs.root(0, ".git") or vim.fn.expand("%:p:h")
+end
+
+local function heading_picker(dirs, hidden)
+  Snacks.picker.grep({
+    dirs = dirs,
+    glob = "*.md",
+    search = "^#{1,6}\\s",
+    hidden = hidden,
+    live = false,
+  })
+end
+
 return {
   {
     "saghen/blink.cmp",
@@ -112,16 +137,66 @@ return {
     "folke/snacks.nvim",
     keys = {
       { "<leader><space>", LazyVim.pick("files", { root = false }), desc = "Find Files (Root Dir)" },
+      {
+        "<leader>hh",
+        function()
+          heading_picker({ vim.fn.expand("%:p") })
+        end,
+        desc = "Headings (current file)",
+      },
+      {
+        "<leader>hH",
+        function()
+          local moc = nearest_moc()
+          heading_picker({ moc and vim.fs.dirname(moc) or vault_root() })
+        end,
+        desc = "Headings (current area)",
+      },
+      {
+        "<leader>hv",
+        function()
+          heading_picker({ vault_root() }, false)
+        end,
+        desc = "Headings (vault)",
+      },
+      {
+        "<leader>hV",
+        function()
+          heading_picker({ vault_root() }, true)
+        end,
+        desc = "Headings (vault, incl. hidden)",
+      },
+      {
+        "<leader>hc",
+        function()
+          local moc = nearest_moc()
+          if moc then
+            vim.cmd.edit(vim.fn.fnameescape(moc))
+          else
+            vim.notify("No MOC found above this file", vim.log.levels.WARN)
+          end
+        end,
+        desc = "Open area MOC",
+      },
     },
-    -- disable flashing when seeking
-    {
-      "folke/flash.nvim",
-      opts = {
-        modes = {
-          char = {
-            highlight = { backdrop = false },
-          },
+  },
+  -- disable flashing when seeking
+  {
+    "folke/flash.nvim",
+    opts = {
+      modes = {
+        char = {
+          highlight = { backdrop = false },
         },
+      },
+    },
+  },
+  -- Label the heading-picker prefix in the which-key popup
+  {
+    "folke/which-key.nvim",
+    opts = {
+      spec = {
+        { "<leader>h", group = "headings" },
       },
     },
   },
