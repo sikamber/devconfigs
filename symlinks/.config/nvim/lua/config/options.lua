@@ -3,6 +3,10 @@
 -- Add any additional options here
 vim.opt.relativenumber = true
 
+-- Show the open file's name at the top of each window (not just the shared
+-- bufferline/tabline), so splits stay identifiable without reading the statusline.
+vim.opt.winbar = "%t%m"
+
 -- if vim.fn.has("wsl") == 1 then
 --   vim.g.clipboard = {
 --     name = "WslClipboard",

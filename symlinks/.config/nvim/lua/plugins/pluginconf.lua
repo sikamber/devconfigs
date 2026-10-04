@@ -26,6 +26,16 @@ return {
   },
   -- Make Pyright check the whole workspace
   {
+    "shortcuts/no-neck-pain.nvim",
+    cmd = "NoNeckPain",
+    keys = {
+      { "<leader>uZ", "<cmd>NoNeckPain<cr>", desc = "Toggle centered width (No Neck Pain)" },
+    },
+    opts = {
+      width = 120,
+    },
+  },
+  {
     "neovim/nvim-lspconfig",
     opts = {
       servers = {
