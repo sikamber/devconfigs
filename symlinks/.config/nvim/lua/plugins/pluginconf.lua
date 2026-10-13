@@ -5,10 +5,10 @@
 -- * disable/enabled LazyVim plugins
 -- * override the configuration of LazyVim plugins
 
--- Vault heading navigation: a note named "<something> MOC.md" marks the
+-- Vault heading navigation: a note named "MOC<something>.md" marks the
 -- directory it lives in as a "content area" root for the narrow heading picker.
 local function is_moc(name)
-  return name:match("MOC%.md$") ~= nil
+  return name:match("^MOC.*%.md$") ~= nil
 end
 
 local function nearest_moc()
@@ -198,6 +198,14 @@ return {
       spec = {
         { "<leader>h", group = "headings" },
       },
+    },
+  },
+  -- Keep links etc. rendered on the cursor line (normal/command mode)
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    opts = {
+      anti_conceal = { enabled = false },
+      win_options = { concealcursor = { rendered = "nc" } },
     },
   },
 }
