@@ -14,9 +14,13 @@ if tmux has-session -t "$session" 2>/dev/null; then
   exec tmux attach -t "$session"
 fi
 
-tmux new-session -d -s "$session" -n claude -c "$start_dir" claude
+# Start plain shells and type the commands in via send-keys, so quitting claude/nvim
+# drops back to a shell instead of closing the window.
+tmux new-session -d -s "$session" -n claude -c "$start_dir"
+tmux send-keys   -t "$session:claude" claude Enter
 tmux new-window  -t "$session" -n bash -c "$start_dir"
-tmux new-window  -t "$session" -n vault -c "$vault_dir" nvim
+tmux new-window  -t "$session" -n vault -c "$vault_dir"
+tmux send-keys   -t "$session:vault" nvim Enter
 
 tmux select-window -t "$session:claude"
 exec tmux attach -t "$session"
